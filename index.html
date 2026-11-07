@@ -118,7 +118,7 @@
         DNS_LINK: "https://doh.2707226.xyz/your-slug" // Link DNS Profile của bạn
     };
 
-    // DANH SÁCH GÓI CƯỚC (Lấy từ dữ liệu bạn gửi)
+    // DANH SÁCH GÓI CƯỚC
     const PACKAGES = [
         { id: "SPT", name: "Spotify Test (1 Ngày)", type: "spotify", price: 5000, code: "SPT", duration: "1 Ngày" },
         { id: "SP6M", name: "Spotify Premium 6 Tháng", type: "spotify", price: 89000, code: "SP6M", duration: "6 Tháng" },
@@ -130,7 +130,6 @@
     let currentPkg = null;
     let checkedUsername = "";
 
-    // 1. Render Giao Diện
     function renderPackages() {
         const grid = document.getElementById('packagesGrid');
         grid.innerHTML = PACKAGES.map(pkg => `
@@ -144,7 +143,6 @@
         `).join('');
     }
 
-    // 2. Xử lý Modal
     function openModal(pkgId) {
         currentPkg = PACKAGES.find(p => p.id === pkgId);
         document.getElementById('modalTitle').textContent = "Đăng ký " + currentPkg.name;
@@ -159,7 +157,6 @@
         document.getElementById('buyModal').classList.remove('active');
     }
 
-    // 3. Gọi API API Đối tác (Thêm timeout + handle errors)
     async function apiRequest(endpoint, method = "GET", body = null) {
         if(CONFIG.SECRET_KEY === "sk_YOUR_SECRET_KEY_HERE") {
             return { ok: false, message: "CTV chưa cấu hình mã SECRET_KEY trong mã nguồn!" };
@@ -184,7 +181,6 @@
         }
     }
 
-    // 4. Kiểm tra tài khoản
     async function checkAccount() {
         const input = document.getElementById('targetInput').value.trim();
         const resBox = document.getElementById('checkResult');
@@ -201,12 +197,12 @@
         
         if (currentPkg.type === 'spotify') {
             const isUid = input.length === 28 || !input.includes('spotify.com');
-            const targetUrl = isUid ? \`/api/spotify/check?uid=\${input}\` : \`/api/spotify/check?uid=\${encodeURIComponent(input)}\`;
+            const targetUrl = isUid ? `/api/spotify/check?uid=${input}` : `/api/spotify/check?uid=${encodeURIComponent(input)}`;
             const res = await apiRequest(targetUrl, "GET");
             if (res.ok) {
                 isSuccess = true;
-                checkedUsername = input; // Pass raw input for API later
-                showResult(\`Tài khoản hợp lệ!<br>Tên hiển thị: \${res.data.username || 'Không rõ'}\`, true);
+                checkedUsername = input;
+                showResult(`Tài khoản hợp lệ!<br>Tên hiển thị: ${res.data.username || 'Không rõ'}`, true);
             } else {
                 showResult(res.message, false);
             }
@@ -215,7 +211,7 @@
             if (res.ok) {
                 isSuccess = true;
                 checkedUsername = input;
-                showResult(\`Tài khoản hợp lệ!<br>Username: \${res.data.username || input}\`, true);
+                showResult(`Tài khoản hợp lệ!<br>Username: ${res.data.username || input}`, true);
             } else {
                 showResult(res.message, false);
             }
@@ -227,7 +223,6 @@
         if (isSuccess) generateQR();
     }
 
-    // 5. Hiển thị thông báo
     function showResult(text, isSuccess) {
         const resBox = document.getElementById('checkResult');
         resBox.innerHTML = text;
@@ -235,21 +230,19 @@
         resBox.style.display = "block";
     }
 
-    // 6. Tạo QR Code Thanh toán
     function generateQR() {
-        const orderCode = "CTV" + Math.floor(10000 + Math.random() * 90000); // Tạo mã ngẫu nhiên
+        const orderCode = "CTV" + Math.floor(10000 + Math.random() * 90000);
         const amount = currentPkg.price;
         
         document.getElementById('qrAmount').textContent = amount.toLocaleString('vi-VN') + "đ";
         document.getElementById('qrContent').textContent = orderCode;
         
-        const qrUrl = \`https://img.vietqr.io/image/\${CONFIG.BANK_ID}-\${CONFIG.BANK_ACCOUNT}-compact2.png?amount=\${amount}&addInfo=\${orderCode}&accountName=\${encodeURIComponent(CONFIG.BANK_NAME)}\`;
+        const qrUrl = `https://img.vietqr.io/image/${CONFIG.BANK_ID}-${CONFIG.BANK_ACCOUNT}-compact2.png?amount=${amount}&addInfo=${orderCode}&accountName=${encodeURIComponent(CONFIG.BANK_NAME)}`;
         document.getElementById('qrImage').src = qrUrl;
         
         document.getElementById('qrSection').style.display = "block";
     }
 
-    // 7. Kích hoạt trực tiếp (Gắn API Trừ Coin)
     async function activatePackage() {
         if(!confirm("Hệ thống sẽ trừ trực tiếp Coin trong tài khoản API của bạn. Bạn đã chắc chắn khách hàng đã thanh toán chưa?")) return;
         
@@ -268,20 +261,19 @@
         document.getElementById('btnActivate').disabled = false;
 
         if (res.ok) {
-            document.getElementById('qrSection').innerHTML = \`
+            document.getElementById('qrSection').innerHTML = `
                 <div style="background: rgba(30,215,96,0.1); color: var(--green); padding: 20px; border-radius: 12px; border: 1px solid rgba(30,215,96,0.2);">
                     <h3 style="margin-bottom:10px;">🎉 Nâng cấp thành công!</h3>
-                    <p style="margin-bottom:15px; color: #fff;">Gói: <strong>\${currentPkg.name}</strong></p>
+                    <p style="margin-bottom:15px; color: #fff;">Gói: <strong>${currentPkg.name}</strong></p>
                     <p style="font-size:14px; margin-bottom:10px; color: var(--text-muted);">Vui lòng copy link cài đặt dưới đây gửi cho khách hàng:</p>
-                    <input type="text" value="\${CONFIG.DNS_LINK}" readonly style="width:100%; padding:10px; border-radius:6px; background:#000; border:1px solid #444; color:#fff; text-align:center;">
+                    <input type="text" value="${CONFIG.DNS_LINK}" readonly style="width:100%; padding:10px; border-radius:6px; background:#000; border:1px solid #444; color:#fff; text-align:center;">
                 </div>
-            \`;
+            `;
         } else {
             alert("LỖI KÍCH HOẠT: " + res.message + "\n\nKiểm tra lại số dư Coin của bạn.");
         }
     }
 
-    // Khởi chạy
     window.onload = renderPackages;
 </script>
 
