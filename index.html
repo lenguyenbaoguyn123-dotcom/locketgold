@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nâng cấp Locket & Spotify Premium</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        :root {
+            --bg: #09090b; --card: #18181b; --gold: #eec95f; --green: #1ed760; 
+            --text: #f4f4f5; --text-muted: #a1a1aa; --border: #27272a;
+        }
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 50px; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .hero { text-align: center; margin: 50px 0; }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .hero p { color: var(--text-muted); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 25px; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); border-color: #555; }
+        .card.spotify { border-top: 4px solid var(--green); }
+        .card.locket { border-top: 4px solid var(--gold); }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-bottom: 15px; }
+        .badge.spotify { background: rgba(30, 215, 96, 0.1); color: var(--green); }
+        .badge.locket { background: rgba(238, 201, 95, 0.1); color: var(--gold); }
+        .price { font-size: 2rem; font-weight: 800; margin: 10px 0; }
+        .price span { font-size: 1rem; color: var(--text-muted); font-weight: 400; }
+        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; margin-top: 15px; }
+        .btn.spotify { background: var(--green); color: #000; }
+        .btn.locket { background: var(--gold); color: #000; }
+        .btn:hover { opacity: 0.9; }
+        
+        /* Modal Styles */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 1000; padding: 20px;}
+        .modal.active { display: flex; }
+        .modal-content { background: var(--card); width: 100%; max-width: 500px; border-radius: 16px; padding: 30px; border: 1px solid var(--border); max-height: 90vh; overflow-y: auto;}
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .close-btn { background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 14px; color: var(--text-muted); }
+        .form-group input { width: 100%; padding: 12px; border-radius: 8px; background: #000; border: 1px solid var(--border); color: white; outline: none; }
+        .form-group input:focus { border-color: var(--gold); }
+        
+        .btn-check { background: #3f3f46; color: white; padding: 10px; width: 100%; border-radius: 8px; border: none; cursor: pointer; margin-bottom: 15px;}
+        #checkResult { font-size: 14px; margin-bottom: 15px; padding: 10px; border-radius: 8px; display: none; }
+        #checkResult.success { background: rgba(30, 215, 96, 0.1); color: var(--green); border: 1px solid rgba(30, 215, 96, 0.2); }
+        #checkResult.error { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+        
+        .qr-section { display: none; text-align: center; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px; }
+        .qr-section img { max-width: 250px; border-radius: 12px; border: 4px solid white; margin: 15px 0; }
+        .warning-box { background: rgba(238, 201, 95, 0.1); color: var(--gold); padding: 12px; border-radius: 8px; font-size: 13px; margin-bottom: 15px; border: 1px solid rgba(238, 201, 95, 0.2); text-align: left;}
+        
+        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; margin-right: 8px; display: none;}
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="hero">
+        <h1>Nâng Cấp Tài Khoản Cao Cấp</h1>
+        <p>Hệ thống tự động kích hoạt API - Nhanh chóng & An toàn</p>
+    </div>
+
+    <div class="grid" id="packagesGrid">
+        <!-- Packages will be injected here by JS -->
+    </div>
+</div>
+
+<!-- Modal Mua Hàng -->
+<div class="modal" id="buyModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Đăng ký gói</h2>
+            <button class="close-btn" onclick="closeModal()">×</button>
+        </div>
+        
+        <div class="form-group">
+            <label id="inputLabel">Nhập Link/UID:</label>
+            <input type="text" id="targetInput" placeholder="Ví dụ: camsitup hoặc link Spotify...">
+        </div>
+        <button class="btn-check" id="btnCheck" onclick="checkAccount()">
+            <span class="loading-spinner" id="checkSpinner"></span> Kiểm tra tài khoản
+        </button>
+        
+        <div id="checkResult"></div>
+        
+        <!-- Phần QR Code (Chỉ hiện sau khi check thành công) -->
+        <div class="qr-section" id="qrSection">
+            <h3>Thanh toán QR Code</h3>
+            <p style="color: var(--text-muted); font-size: 14px; margin-top: 5px;">Số tiền: <strong id="qrAmount" style="color: white; font-size: 18px;">0đ</strong></p>
+            <p style="color: var(--text-muted); font-size: 14px;">Nội dung: <strong id="qrContent" style="color: var(--gold);">MUA...</strong></p>
+            <img id="qrImage" src="" alt="VietQR">
+            
+            <div class="warning-box">
+                <strong>Lưu ý quan trọng:</strong> Vì đây là phiên bản web tĩnh (GitHub Pages), hệ thống sẽ không tự động nhận biết bạn đã chuyển khoản. Bạn vui lòng chuyển khoản đúng nội dung, sau đó bấm nút Kích hoạt bên dưới.
+            </div>
+            
+            <button class="btn locket" id="btnActivate" onclick="activatePackage()">
+                <span class="loading-spinner" id="actSpinner"></span> Đã chuyển tiền - Kích hoạt ngay
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // ⚙️ PHẦN CẤU HÌNH DÀNH CHO CTV
+    // ==========================================
+    const CONFIG = {
+        SECRET_KEY: "sk_YOUR_SECRET_KEY_HERE", // Điền mã Secret Token của bạn vào đây
+        BASE_URL: "https://locket.2707226.xyz",
+        BANK_ID: "MB",               // Tên viết tắt hoặc BIN ngân hàng (VD: MB, VCB, TCB)
+        BANK_ACCOUNT: "123456789",   // Số tài khoản của bạn
+        BANK_NAME: "NGUYEN VAN A",   // Tên chủ thẻ (Không dấu)
+        DNS_LINK: "https://doh.2707226.xyz/your-slug" // Link DNS Profile của bạn
+    };
+
+    // DANH SÁCH GÓI CƯỚC (Lấy từ dữ liệu bạn gửi)
+    const PACKAGES = [
+        { id: "SPT", name: "Spotify Test (1 Ngày)", type: "spotify", price: 5000, code: "SPT", duration: "1 Ngày" },
+        { id: "SP6M", name: "Spotify Premium 6 Tháng", type: "spotify", price: 89000, code: "SP6M", duration: "6 Tháng" },
+        { id: "SPOTIFY1Y", name: "Spotify Premium 1 Năm", type: "spotify", price: 159000, code: "SPOTIFY1Y", duration: "1 Năm" },
+        { id: "SPVV", name: "Spotify Vĩnh Viễn", type: "spotify", price: 299000, code: "SPVV", duration: "Trọn đời" },
+        { id: "LKG1Y", name: "Locket Gold 1 Năm", type: "locket", price: 99000, code: "LKG1Y", duration: "1 Năm" }
+    ];
+
+    let currentPkg = null;
+    let checkedUsername = "";
+
+    // 1. Render Giao Diện
+    function renderPackages() {
+        const grid = document.getElementById('packagesGrid');
+        grid.innerHTML = PACKAGES.map(pkg => `
+            <div class="card ${pkg.type}">
+                <div class="badge ${pkg.type}">${pkg.type === 'spotify' ? '🎵 MUSIC' : '💛 SOCIAL'}</div>
+                <h3>${pkg.name}</h3>
+                <div class="price">${pkg.price.toLocaleString('vi-VN')}<span>đ</span></div>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Thời hạn: ${pkg.duration}</p>
+                <button class="btn ${pkg.type}" onclick="openModal('${pkg.id}')">Đăng ký gói này</button>
+            </div>
+        `).join('');
+    }
+
+    // 2. Xử lý Modal
+    function openModal(pkgId) {
+        currentPkg = PACKAGES.find(p => p.id === pkgId);
+        document.getElementById('modalTitle').textContent = "Đăng ký " + currentPkg.name;
+        document.getElementById('inputLabel').textContent = currentPkg.type === 'spotify' ? "Nhập Link hoặc UID Spotify:" : "Nhập Username hoặc Link Locket:";
+        document.getElementById('targetInput').value = "";
+        document.getElementById('checkResult').style.display = "none";
+        document.getElementById('qrSection').style.display = "none";
+        document.getElementById('buyModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('buyModal').classList.remove('active');
+    }
+
+    // 3. Gọi API API Đối tác (Thêm timeout + handle errors)
+    async function apiRequest(endpoint, method = "GET", body = null) {
+        if(CONFIG.SECRET_KEY === "sk_YOUR_SECRET_KEY_HERE") {
+            return { ok: false, message: "CTV chưa cấu hình mã SECRET_KEY trong mã nguồn!" };
+        }
+        
+        const options = {
+            method: method,
+            headers: {
+                "Authorization": "Bearer " + CONFIG.SECRET_KEY,
+                "Content-Type": "application/json"
+            }
+        };
+        if (body) options.body = JSON.stringify(body);
+
+        try {
+            const response = await fetch(CONFIG.BASE_URL + endpoint, options);
+            const data = await response.json();
+            if (!response.ok) return { ok: false, message: data.message || data.error || "Lỗi máy chủ đối tác." };
+            return { ok: true, data: data.data || data };
+        } catch (e) {
+            return { ok: false, message: "Không thể kết nối đến máy chủ API." };
+        }
+    }
+
+    // 4. Kiểm tra tài khoản
+    async function checkAccount() {
+        const input = document.getElementById('targetInput').value.trim();
+        const resBox = document.getElementById('checkResult');
+        if (!input) {
+            showResult("Vui lòng nhập thông tin tài khoản!", false);
+            return;
+        }
+
+        document.getElementById('checkSpinner').style.display = "inline-block";
+        document.getElementById('btnCheck').disabled = true;
+        resBox.style.display = "none";
+
+        let isSuccess = false;
+        
+        if (currentPkg.type === 'spotify') {
+            const isUid = input.length === 28 || !input.includes('spotify.com');
+            const targetUrl = isUid ? \`/api/spotify/check?uid=\${input}\` : \`/api/spotify/check?uid=\${encodeURIComponent(input)}\`;
+            const res = await apiRequest(targetUrl, "GET");
+            if (res.ok) {
+                isSuccess = true;
+                checkedUsername = input; // Pass raw input for API later
+                showResult(\`Tài khoản hợp lệ!<br>Tên hiển thị: \${res.data.username || 'Không rõ'}\`, true);
+            } else {
+                showResult(res.message, false);
+            }
+        } else {
+            const res = await apiRequest("/api/uid/resolve", "POST", { identifier: input, service: "locket" });
+            if (res.ok) {
+                isSuccess = true;
+                checkedUsername = input;
+                showResult(\`Tài khoản hợp lệ!<br>Username: \${res.data.username || input}\`, true);
+            } else {
+                showResult(res.message, false);
+            }
+        }
+
+        document.getElementById('checkSpinner').style.display = "none";
+        document.getElementById('btnCheck').disabled = false;
+
+        if (isSuccess) generateQR();
+    }
+
+    // 5. Hiển thị thông báo
+    function showResult(text, isSuccess) {
+        const resBox = document.getElementById('checkResult');
+        resBox.innerHTML = text;
+        resBox.className = isSuccess ? "success" : "error";
+        resBox.style.display = "block";
+    }
+
+    // 6. Tạo QR Code Thanh toán
+    function generateQR() {
+        const orderCode = "CTV" + Math.floor(10000 + Math.random() * 90000); // Tạo mã ngẫu nhiên
+        const amount = currentPkg.price;
+        
+        document.getElementById('qrAmount').textContent = amount.toLocaleString('vi-VN') + "đ";
+        document.getElementById('qrContent').textContent = orderCode;
+        
+        const qrUrl = \`https://img.vietqr.io/image/\${CONFIG.BANK_ID}-\${CONFIG.BANK_ACCOUNT}-compact2.png?amount=\${amount}&addInfo=\${orderCode}&accountName=\${encodeURIComponent(CONFIG.BANK_NAME)}\`;
+        document.getElementById('qrImage').src = qrUrl;
+        
+        document.getElementById('qrSection').style.display = "block";
+    }
+
+    // 7. Kích hoạt trực tiếp (Gắn API Trừ Coin)
+    async function activatePackage() {
+        if(!confirm("Hệ thống sẽ trừ trực tiếp Coin trong tài khoản API của bạn. Bạn đã chắc chắn khách hàng đã thanh toán chưa?")) return;
+        
+        document.getElementById('actSpinner').style.display = "inline-block";
+        document.getElementById('btnActivate').disabled = true;
+
+        const payload = {
+            username: checkedUsername,
+            packageCode: currentPkg.code,
+            service: currentPkg.type
+        };
+
+        const res = await apiRequest("/api/uid/create", "POST", payload);
+        
+        document.getElementById('actSpinner').style.display = "none";
+        document.getElementById('btnActivate').disabled = false;
+
+        if (res.ok) {
+            document.getElementById('qrSection').innerHTML = \`
+                <div style="background: rgba(30,215,96,0.1); color: var(--green); padding: 20px; border-radius: 12px; border: 1px solid rgba(30,215,96,0.2);">
+                    <h3 style="margin-bottom:10px;">🎉 Nâng cấp thành công!</h3>
+                    <p style="margin-bottom:15px; color: #fff;">Gói: <strong>\${currentPkg.name}</strong></p>
+                    <p style="font-size:14px; margin-bottom:10px; color: var(--text-muted);">Vui lòng copy link cài đặt dưới đây gửi cho khách hàng:</p>
+                    <input type="text" value="\${CONFIG.DNS_LINK}" readonly style="width:100%; padding:10px; border-radius:6px; background:#000; border:1px solid #444; color:#fff; text-align:center;">
+                </div>
+            \`;
+        } else {
+            alert("LỖI KÍCH HOẠT: " + res.message + "\n\nKiểm tra lại số dư Coin của bạn.");
+        }
+    }
+
+    // Khởi chạy
+    window.onload = renderPackages;
+</script>
+
+</body>
+</html>
